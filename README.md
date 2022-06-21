@@ -1,0 +1,2 @@
+# Sistema de Recomendação
+Empresas como a Amazon, Americanas ou Mercado Livre usam diferentes sistemas de recomendação para fornecer sugestões aos clientes. A Amazon usa atualmente filtragem colaborativa item-item, que escala para conjuntos de dados massivos e produz sistema de recomendação de alta qualidade em tempo real. Este sistema é uma espécie de sistema de filtragem de informações que busca prever a “classificação” ou preferências que o usuário está interessado.
