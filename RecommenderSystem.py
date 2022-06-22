@@ -3,33 +3,33 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from math import trunc
-
+import MachineLearning
 
 dataset = pd.read_csv("ratings_Electronics.csv", names=[
                       "IdUser", "IdProduct", "Rating", "TimesTamp"], sep=",")
 
 
 # Exibe os dados do cabeçalho
-print("Display head data: \n\n{}".format(dataset.head()))
+print("Exibir dados(head): \n\n{}".format(dataset.head()))
 
 # Substituindo todos os valores de NaN por 0
 dataset = dataset.fillna(0)
 
 # Verifique se há valores NaN
-print(f'\nNumber of missing values across columns:\n{dataset.isnull().sum()}')
+print(f'\nValores ausentes nas colunas:\n{dataset.isnull().sum()}')
 
-# Shape dos dados
-print("\nShape of the data: {}".format(dataset.shape))
+# Shape
+print("\nShape: {}".format(dataset.shape))
 
-# Verificarndo os tipos dos dados
-print("\nData Types: \n{}".format(dataset.dtypes))
+# Verificando os tipos dos dados
+print("\nTipos dos dados: \n{}".format(dataset.dtypes))
 
-# Resumo
+# sumário
 summary = dataset.describe()['Rating'].T
-print("\nSummary: \n\n{}".format(summary))
+print("\nSumário: \n\n{}".format(summary))
 
 # Classificações mínimas e máximas
-print('\nMinimum and maximum ratings: \nMinimum rating is: {:d} \nMaximum rating is: {:d}'.format(
+print('\nClassificações mínimas e máximas: \nRating mínimo é: {:d} \nRating máximo é: {:d}'.format(
     trunc(dataset.Rating.min()), trunc(dataset.Rating.max())))
 
 
@@ -43,14 +43,14 @@ plt.ylabel("Quantidade")
 
 # Usuários e produtos únicos
 print("="*50)
-print("\n ------ Unique Users and products ------")
-print("\nTotal no of ratings: ", dataset.shape[0])
-print("Total No of Users: ", len(np.unique(dataset.IdUser)))
-print("Total No of products: ", len(np.unique(dataset.IdProduct)))
+print("\n ------ Usuários e produtos únicos ------")
+print("\nNº total de avaliações: ", dataset.shape[0])
+print("Nº total de usuários: ", len(np.unique(dataset.IdUser)))
+print("Nº total de produtos: ", len(np.unique(dataset.IdProduct)))
 
 
 # Análise da classificação dada pelo usuário
-print("\nAnalysis of rating given by the user:\n")
+print("\nAnálise da classificação dada pelo usuário:")
 no_of_rated_products_per_user = dataset.groupby(
     by='IdUser')['Rating'].count().sort_values(ascending=False)
 
@@ -71,11 +71,27 @@ new_Dataset_Rating = dataset.groupby("IdProduct").filter(
     lambda x: x['Rating'].count() >= 15)
 
 # Média de avaliações por produto
-print("\nAverage of rating per product: \n")
+print("\nMédia de avaliações por produto: \n")
 print(new_Dataset_Rating.groupby('IdProduct')['Rating'].mean())
 
 # Quantidade total de avaliações por produto
-print("\nTotal no of rating for product: \n")
-print(new_Dataset_Rating.groupby('IdProduct')['Rating'].count().sort_values(ascending=False))
+print("\nQuantidade total de avaliações por produto: \n")
+print(new_Dataset_Rating.groupby('IdProduct')[
+      'Rating'].count().sort_values(ascending=False))
+
+ratings_mean_count = pd.DataFrame(
+    new_Dataset_Rating.groupby('IdProduct')['Rating'].mean())
+ratings_mean_count['rating_counts'] = pd.DataFrame(
+    new_Dataset_Rating.groupby('IdProduct')['Rating'].count())
+print(ratings_mean_count.head())
+
+# produtos mais populares
+popular_products = pd.DataFrame(
+    new_Dataset_Rating.groupby('IdProduct')['Rating'].count())
+mostPopular = popular_products.sort_values('Rating', ascending=False)
+mostPopular.head(10).plot(kind='bar', figsize=(12, 6))
+
+
+MachineLearning.machineLearning(new_Dataset_Rating)
 
 plt.show()
