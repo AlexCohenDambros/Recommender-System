@@ -20,10 +20,19 @@ from tensorflow.keras.applications.xception import Xception
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input
 
+import warnings
 from warnings import simplefilter
 
 simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 np.random.seed(42)
+
+pd.options.mode.chained_assignment = None
+
+dataset = pd.read_csv("ratings_Electronics.csv", names=[
+                      "IdUser", "IdProduct", "Rating", "TimesTamp"], sep=",")
+
 
 # ======== Parametros das funcoes de Machine Learning ========
 
@@ -33,7 +42,7 @@ parametrosKNN = [
         'weights': ['uniform', 'distance'],
         'algorithm':['auto', 'ball_tree', 'kd_tree', 'brute'],
         'p': [1, 2],
-        'leaf_size': range(2, 20, 2),
+        'leaf_size': range(2, 20, 2)
     }
 ]
 
@@ -163,7 +172,8 @@ def randomForestClassifier(parameters, folds, X_train, X_test, y_train, y_test):
 
     clfa = RandomForestClassifier(random_state=42)
 
-    clfa = GridSearchCV(clfa, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
+    clfa = GridSearchCV(
+        clfa, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
 
     clfa = clfa.fit(X_train, y_train)
 
@@ -190,7 +200,8 @@ def mlpClassifier(parameters, folds, X_train, X_test, y_train, y_test):
     # Treina o classificador
     clfa = MLPClassifier(random_state=42)
 
-    clfa = GridSearchCV(clfa, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
+    clfa = GridSearchCV(
+        clfa, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
 
     clfa = clfa.fit(X_train, y_train)
 
@@ -215,21 +226,27 @@ def mlpClassifier(parameters, folds, X_train, X_test, y_train, y_test):
 def machineLearning(dataset):
     melhoresResultados = {}
     print("="*50)
+
+    dataset = dataset.head(1000)
     
+    dataset["IdUser"] = dataset["IdUser"].factorize()[0]
+    dataset["IdProduct"] = dataset["IdProduct"].factorize()[0]
+
     valores = dataset.values
     y = valores[:, 2]
     dataset = dataset.drop(['Rating'], axis=1)
     novos_valores = dataset.values
     X = novos_valores[:, 0:3]
-    
+
     # separa teste e treino
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, train_size=0.7, random_state=42, stratify=y)
-    
-    folds = 15
+
+    folds = 10
 
     print("\n==== Executando --> KNN ====")
-    score, matrix, best_parameters = k_Nearest_Neighbors(parametrosKNN, folds, X_train, X_test, y_train, y_test)
+    score, matrix, best_parameters = k_Nearest_Neighbors(
+        parametrosKNN, folds, X_train, X_test, y_train, y_test)
     melhoresResultados["KNN"] = [score, matrix, best_parameters]
 
     print("\n==== Executando --> SVM ====")
@@ -247,7 +264,7 @@ def machineLearning(dataset):
     print("\n==== Executando --> MLP_Classifier ====")
     score, matrix, best_parameters = mlpClassifier(parametersMLP, folds, X_train, X_test, y_train, y_test)
     melhoresResultados["MLP_Classifier"] = [score, matrix, best_parameters]
-    
+
     print("================================")
     print("\nResultados encontrados: \n")
     melhorAcuracia = ["", 0]
@@ -268,3 +285,6 @@ def machineLearning(dataset):
 
     print("\nParametros utilizados: {}".format(best_parameters))
     plotResultados(matrix)
+
+
+machineLearning(dataset)
