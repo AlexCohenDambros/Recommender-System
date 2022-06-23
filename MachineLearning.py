@@ -13,6 +13,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.decomposition import TruncatedSVD
 
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.inception_v3 import InceptionV3, preprocess_input
@@ -29,10 +30,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 np.random.seed(42)
 
 pd.options.mode.chained_assignment = None
-
-dataset = pd.read_csv("ratings_Electronics.csv", names=[
-                      "IdUser", "IdProduct", "Rating", "TimesTamp"], sep=",")
-
 
 # ======== Parametros das funcoes de Machine Learning ========
 
@@ -223,14 +220,16 @@ def mlpClassifier(parameters, folds, X_train, X_test, y_train, y_test):
     return score, matrix, best_parameters
 
 
-def machineLearning(dataset):
+def machineLearning(dataset_main):
     melhoresResultados = {}
     print("="*50)
-
-    dataset = dataset.head(1000)
+    
+    dataset_main = dataset_main.head(20000)
+    
+    dataset = dataset_main.copy()
     
     dataset["IdUser"] = dataset["IdUser"].factorize()[0]
-    dataset["IdProduct"] = dataset["IdProduct"].factorize()[0]
+    dataset["IdProduct"] = dataset["IdProduct"].factorize()[0] 
 
     valores = dataset.values
     y = valores[:, 2]
@@ -285,6 +284,38 @@ def machineLearning(dataset):
 
     print("\nParametros utilizados: {}".format(best_parameters))
     plotResultados(matrix)
+    
+    ratings_matrix = dataset_main.pivot_table(values='Rating', index='IdUser', columns='IdProduct', fill_value=0)
+    print(f"\nRating Matrix: \n{ratings_matrix.head()}")
+    
+    X_matrix = ratings_matrix.T
+    
+    # Decompondo a Matrix
+    SVD = TruncatedSVD(n_components=10)
+    decomposed_matrix = SVD.fit_transform(X_matrix)
+    print("\nDecompondo a Matrix: ", decomposed_matrix.shape)
+    
+    # Matriz de correlação
+    correlation_matrix = np.corrcoef(decomposed_matrix)
+    print("\nMatrix de correlação: ", correlation_matrix.shape)
+    
+    # Número do índice do ID do produto adquirido pelo cliente
+    try:
+        id_produto = "B00000K135"
+        product_names = list(X_matrix.index)
+        product_ID = product_names.index(id_produto)
+        
+        # Correlação de todos os itens com o item comprado por este cliente com base em itens avaliados por outros clientes que compraram o mesmo produto
+        correlation_product_ID = correlation_matrix[product_ID]
+        
+        # Recomendar os 25 principais produtos altamente correlacionados em sequência
+        Recommend = list(X_matrix.index[correlation_product_ID > 0.65])
 
+        # Remove o item já comprado pelo cliente
+        Recommend.remove(id_produto) 
 
-machineLearning(dataset)
+        print(f"\nItens que foram recomendados: \n{Recommend[0:24]}")
+        
+    except:
+        print("O Id do cliente inseredo não está na base de dados!")
+

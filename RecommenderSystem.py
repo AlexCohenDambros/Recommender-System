@@ -91,7 +91,6 @@ popular_products = pd.DataFrame(
 mostPopular = popular_products.sort_values('Rating', ascending=False)
 mostPopular.head(10).plot(kind='bar', figsize=(12, 6))
 
-
 MachineLearning.machineLearning(new_Dataset_Rating)
 
 plt.show()
