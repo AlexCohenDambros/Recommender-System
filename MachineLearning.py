@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
-from requests import delete
+from joblib import dump, load
+import os.path
+
 
 # Treinamento de classificadores
 from sklearn import model_selection
@@ -77,7 +79,7 @@ parametersMLP = [
 ]
 
 
-def plotResultados(matrix):
+def plotMatrix(matrix):
     print("Confusion Matrix:")
     print(matrix)
 
@@ -106,6 +108,10 @@ def k_Nearest_Neighbors(parameters, folds, X_train, X_test, y_train, y_test):
     matrix = confusion_matrix(y_test, predicted)
 
     print("\nFinished!")
+    
+    # salvando o modelo 
+    with open("KNN.mod", 'wb') as fo:  
+        dump(model, fo)
 
     return score, matrix, best_parameters
 
@@ -134,25 +140,29 @@ def supportVectorMachine(parameters, folds, X_train, X_test, y_train, y_test):
     matrix = confusion_matrix(y_test, predicted)
 
     print("\nFinished!")
+    
+    # salvando o modelo 
+    with open("SVM.mod", 'wb') as fo:  
+        dump(model, fo)
 
     return score, matrix, best_parameters
 
 
 def baggingClassifier(parameters, folds, X_train, X_test, y_train, y_test):
 
-    clfa = BaggingClassifier(random_state=42)
+    model = BaggingClassifier(random_state=42)
 
-    clfa = GridSearchCV(
-        clfa, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
+    model = GridSearchCV(
+        model, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
 
-    clfa = clfa.fit(X_train, y_train)
+    model = model.fit(X_train, y_train)
 
-    best_parameters = clfa.best_params_
+    best_parameters = model.best_params_
 
     # testa usando a base de testes
-    predicted = clfa.predict(X_test)
+    predicted = model.predict(X_test)
 
-    result = model_selection.cross_val_score(clfa, X_train, y_train, cv=folds)
+    result = model_selection.cross_val_score(model, X_train, y_train, cv=folds)
 
     # calcula a acuracia na base de teste
     score = result.mean()
@@ -161,25 +171,29 @@ def baggingClassifier(parameters, folds, X_train, X_test, y_train, y_test):
     matrix = confusion_matrix(y_test, predicted)
 
     print("\nFinished!")
+    
+    # salvando o modelo 
+    with open("Bagging.mod", 'wb') as fo:  
+        dump(model, fo)
 
     return score, matrix, best_parameters
 
 
 def randomForestClassifier(parameters, folds, X_train, X_test, y_train, y_test):
 
-    clfa = RandomForestClassifier(random_state=42)
+    model = RandomForestClassifier(random_state=42)
 
-    clfa = GridSearchCV(
-        clfa, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
+    model = GridSearchCV(
+        model, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
 
-    clfa = clfa.fit(X_train, y_train)
+    model = model.fit(X_train, y_train)
 
-    best_parameters = clfa.best_params_
+    best_parameters = model.best_params_
 
     # testa usando a base de testes
-    predicted = clfa.predict(X_test)
+    predicted = model.predict(X_test)
 
-    result = model_selection.cross_val_score(clfa, X_train, y_train, cv=folds)
+    result = model_selection.cross_val_score(model, X_train, y_train, cv=folds)
 
     # calcula a acuracia na base de teste
     score = result.mean()
@@ -188,6 +202,10 @@ def randomForestClassifier(parameters, folds, X_train, X_test, y_train, y_test):
     matrix = confusion_matrix(y_test, predicted)
 
     print("\nFinished!")
+    
+    # salvando o modelo 
+    with open("RandomForest.mod", 'wb') as fo:  
+        dump(model, fo)
 
     return score, matrix, best_parameters
 
@@ -195,19 +213,19 @@ def randomForestClassifier(parameters, folds, X_train, X_test, y_train, y_test):
 def mlpClassifier(parameters, folds, X_train, X_test, y_train, y_test):
 
     # Treina o classificador
-    clfa = MLPClassifier(random_state=42)
+    model = MLPClassifier(random_state=42)
 
-    clfa = GridSearchCV(
-        clfa, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
+    model = GridSearchCV(
+        model, parameters, scoring='accuracy', cv=folds, n_jobs=-1)
 
-    clfa = clfa.fit(X_train, y_train)
+    model = model.fit(X_train, y_train)
 
-    best_parameters = clfa.best_params_
+    best_parameters = model.best_params_
 
     # testa usando a base de testes
-    predicted = clfa.predict(X_test)
+    predicted = model.predict(X_test)
 
-    result = model_selection.cross_val_score(clfa, X_train, y_train, cv=folds)
+    result = model_selection.cross_val_score(model, X_train, y_train, cv=folds)
 
     # calcula a acuracia na base de teste
     score = result.mean()
@@ -216,16 +234,51 @@ def mlpClassifier(parameters, folds, X_train, X_test, y_train, y_test):
     matrix = confusion_matrix(y_test, predicted)
 
     print("\nFinished!")
+    
+    # salvando o modelo 
+    with open("MLP.mod", 'wb') as fo:  
+        dump(model, fo)
 
     return score, matrix, best_parameters
 
+def calculate_model(name_model, model, X_test, y_test, X_train, y_train, folds):
+    print("="*50)
+    
+    print(f"\n==== Executando --> {name_model} ====")
+    # testa usando a base de testes
+    predicted = model.predict(X_test)
+
+    result = model_selection.cross_val_score(model, X_train, y_train, cv=folds)
+
+    # calcula a acuracia na base de teste
+    score = result.mean()
+
+    # calcula a matriz de confusao
+    matrix = confusion_matrix(y_test, predicted)
+    
+    print("Classification accuracy {}: {}".format(name_model, score))
+    plotMatrix(matrix)
+
+    print("\nFinished!")
+
+def load_model(X_test, y_test, X_train, y_train, folds):
+    model_knn = load('KNN.mod')
+    model_svm = load('SVM.mod')
+    model_random_forest = load('RandomForest.mod')
+    model_bagging = load('Bagging.mod')
+    model_mlp = load('MLP.mod')
+    
+    calculate_model("KNN", model_knn, X_test, y_test, X_train, y_train, folds) 
+    calculate_model("SVM", model_svm, X_test, y_test, X_train, y_train, folds) 
+    calculate_model("Random_Forest", model_random_forest, X_test, y_test, X_train, y_train, folds) 
+    calculate_model("Bagging", model_bagging, X_test, y_test, X_train, y_train, folds) 
+    calculate_model("MLP", model_mlp, X_test, y_test, X_train, y_train, folds) 
 
 def machineLearning(dataset_main):
     melhoresResultados = {}
-    print("="*50)
-    
+        
     dataset_main = dataset_main.head(20000)
-    
+        
     dataset = dataset_main.copy()
     
     dataset["IdUser"] = dataset["IdUser"].factorize()[0]
@@ -242,48 +295,62 @@ def machineLearning(dataset_main):
         X, y, train_size=0.7, random_state=42, stratify=y)
 
     folds = 10
+    
+    # Example: B00000K135 
+    id_produto = str(input("\nInforme o id do produto que foi adquirido pelo cliente: "))
+    
+    file_exists_knn = os.path.exists('KNN.mod')
+    file_exists_svm = os.path.exists('SVM.mod')
+    file_exists_random_forest = os.path.exists('RandomForest.mod')
+    file_exists_bagging = os.path.exists('Bagging.mod')
+    file_exists_mlp = os.path.exists('MLP.mod')
+    
+    if file_exists_knn and file_exists_svm and file_exists_random_forest and file_exists_bagging and file_exists_mlp:
+        load_model(X_test, y_test, X_train, y_train, folds)
+        
+    else: 
+        print("="*50)
+        print("\n==== Executando --> KNN ====")
+        score, matrix, best_parameters = k_Nearest_Neighbors(
+            parametrosKNN, folds, X_train, X_test, y_train, y_test)
+        melhoresResultados["KNN"] = [score, matrix, best_parameters]
 
-    print("\n==== Executando --> KNN ====")
-    score, matrix, best_parameters = k_Nearest_Neighbors(
-        parametrosKNN, folds, X_train, X_test, y_train, y_test)
-    melhoresResultados["KNN"] = [score, matrix, best_parameters]
+        print("\n==== Executando --> SVM ====")
+        score, matrix, best_parameters = supportVectorMachine(parametersSVM, folds, X_train, X_test, y_train, y_test)
+        melhoresResultados["SVM"] = [score, matrix, best_parameters]
 
-    print("\n==== Executando --> SVM ====")
-    score, matrix, best_parameters = supportVectorMachine(parametersSVM, folds, X_train, X_test, y_train, y_test)
-    melhoresResultados["SVM"] = [score, matrix, best_parameters]
+        print("\n==== Executando --> Random Forest ====")
+        score, matrix, best_parameters = randomForestClassifier(parametersRandomForest, folds, X_train, X_test, y_train, y_test)
+        melhoresResultados["RandomForest"] = [score, matrix, best_parameters]
 
-    print("\n==== Executando --> Random Forest ====")
-    score, matrix, best_parameters = randomForestClassifier(parametersRandomForest, folds, X_train, X_test, y_train, y_test)
-    melhoresResultados["RandomForest"] = [score, matrix, best_parameters]
+        print("\n==== Executando --> Bagging ====")
+        score, matrix, best_parameters = baggingClassifier(parametersBagging, folds, X_train, X_test, y_train, y_test)
+        melhoresResultados["Bagging"] = [score, matrix, best_parameters]
 
-    print("\n==== Executando --> Bagging ====")
-    score, matrix, best_parameters = baggingClassifier(parametersBagging, folds, X_train, X_test, y_train, y_test)
-    melhoresResultados["Bagging"] = [score, matrix, best_parameters]
+        print("\n==== Executando --> MLP_Classifier ====")
+        score, matrix, best_parameters = mlpClassifier(parametersMLP, folds, X_train, X_test, y_train, y_test)
+        melhoresResultados["MLP_Classifier"] = [score, matrix, best_parameters]
 
-    print("\n==== Executando --> MLP_Classifier ====")
-    score, matrix, best_parameters = mlpClassifier(parametersMLP, folds, X_train, X_test, y_train, y_test)
-    melhoresResultados["MLP_Classifier"] = [score, matrix, best_parameters]
+        print("================================")
+        print("\nResultados encontrados: \n")
+        melhorAcuracia = ["", 0]
+        for key in melhoresResultados:
+            print("Classification accuracy {}: {}".format(
+                key, melhoresResultados[key][0]))
+            if melhorAcuracia[1] < melhoresResultados[key][0]:
+                melhorAcuracia[0] = key
+                melhorAcuracia[1] = melhoresResultados[key][0]
 
-    print("================================")
-    print("\nResultados encontrados: \n")
-    melhorAcuracia = ["", 0]
-    for key in melhoresResultados:
-        print("Classification accuracy {}: {}".format(
-            key, melhoresResultados[key][0]))
-        if melhorAcuracia[1] < melhoresResultados[key][0]:
-            melhorAcuracia[0] = key
-            melhorAcuracia[1] = melhoresResultados[key][0]
+        print("================================")
+        print("\nMelhor resultado foi do: {} \nAcuracia de: {}".format(
+            melhorAcuracia[0], melhorAcuracia[1]))
+        for key in melhoresResultados:
+            if key == melhorAcuracia[0]:
+                score, matrix, best_parameters = melhoresResultados[key][
+                    0], melhoresResultados[key][1], melhoresResultados[key][2]
 
-    print("================================")
-    print("\nMelhor resultado foi do: {} \nAcuracia de: {}".format(
-        melhorAcuracia[0], melhorAcuracia[1]))
-    for key in melhoresResultados:
-        if key == melhorAcuracia[0]:
-            score, matrix, best_parameters = melhoresResultados[key][
-                0], melhoresResultados[key][1], melhoresResultados[key][2]
-
-    print("\nParametros utilizados: {}".format(best_parameters))
-    plotResultados(matrix)
+        print("\nParametros utilizados: {}".format(best_parameters))
+        plotMatrix(matrix)
     
     ratings_matrix = dataset_main.pivot_table(values='Rating', index='IdUser', columns='IdProduct', fill_value=0)
     print(f"\nRating Matrix: \n{ratings_matrix.head()}")
@@ -301,7 +368,6 @@ def machineLearning(dataset_main):
     
     # Número do índice do ID do produto adquirido pelo cliente
     try:
-        id_produto = "B00000K135"
         product_names = list(X_matrix.index)
         product_ID = product_names.index(id_produto)
         
